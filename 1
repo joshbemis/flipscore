@@ -1,0 +1,28 @@
+# version 0.1 
+# created 2025-08-13
+# intention is to create a simple program to keep score for Flip 7
+# Scores for Flip 7 are running totals
+# default winning condition is a score of 200
+# each player that ends the round with cards adds the total of their cards
+# if a player has 7 value cards in the line, they get a bonus 15 points
+# set up two modes: basic and guided
+# basic will take simple inputs from the user and add those inputs to the user's score
+# guided will allow the user to input the values of each individual card, add those to get the score, then add the score to the total
+# build basic first
+
+# use class for users
+
+from tabulate import tabulate
+
+# use tabulate to print scores.
+# define table as a list
+# each item in that list is another list that contains the values by row
+# ex:
+# table = [["Round 1", 5, 10], ["Round 2", 10, 15]]
+# print(tabulate(table))
+
+# first set up user input for score
+score = input("Josh's round 1 score: ")
+
+score_table = [["Round 1", score]]
+print(tabulate(score_table))
