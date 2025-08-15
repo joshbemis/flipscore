@@ -1,5 +1,5 @@
 """
-version 0.6 
+version 0.7
 created 2025-08-14
 Scores for Flip 7 are running totals
 default winning condition is a score of 200
@@ -12,12 +12,13 @@ guided will allow the user to input the values of each individual card, add thos
 maybe allow two differnet table displays: by round and just total by player
 TODO: 
     D - v0.5 tweak winning condition message to state who won and with what score
-    D - v0.6 handle winning ties (if wanted. instructions say first player to 200, so home rule if not)
-    v0.7 added during 0.6 work, will need to reset player order each round to help say dealer
+    D - v0.6 handle winning ties 
+    D - v0.7 added during 0.6 work, will need to reset player order each round to help say dealer
     v0.9 error handling
     v0.9.5 clean up variable names, formatting and promp language
     v1.0 README and release
     v1.1 implement guided mode (probably just an extra function)
+    v1.2 implment alternate table view
 """
 
 from tabulate import tabulate
@@ -38,6 +39,7 @@ def get_player_list():
     return player_list
 
 def intro():
+    """Starts game, provides directions and records the win condition. Will collect game mode later."""
     print("Welcome to the Flip 7 score keeper! \n")
     print("This program has two modes: basic and guided. In basic mode, you will need to add each player's cards at the end of each round and enter the total.")
     print("In guided mode, you will enter each card individually and the program will total them for you.\n")
@@ -53,15 +55,13 @@ def play_round(players, round_number, cur_totals):
     """Pulls the score for each player from input and sends the round scores and totals back as lists"""
     round_scores = [round_number]
     print(f"~~~~~Starting round number {round_number}!~~~~~")
-    print(f"PLAYER deals this round.")
+    print(f"{players[0]} deals this round.")
     for player in players:
         round_scores.append(int(input(f"What was {player}'s score? ")))
     
     # updates total for each player
     for score in range(1, len(round_scores)):
         cur_totals[score] += round_scores[score]
-
-    # call reorder function
 
     return round_scores, cur_totals # return new player list
 
@@ -81,9 +81,29 @@ def winning_player(players, cur_totals, win_score):
         else:
             print(f"The next person to achieve {win_score} points was {winner}. Too slow!")
 
-#def reset_order():
-    # function to reset the order for each round
-    # will also need to reset order of scores
+def reset_order(players, score_table):
+    """Accepts the player list and scores lists, resets the order after each round to change dealer"""
+    # shift first player to last player
+    moved = players.pop(0)
+    players.append(moved)
+
+    # shift first total to last total to line up with players, start at index 1 to avoid "Total" value
+    moved = score_table[-1].pop(1)
+    score_table[-1].append(moved)
+
+    # shift each rounds scores so they appear correctly on summary table, start at index -1 to exclude total item
+    for round in score_table[:-1]:
+        moved = round.pop(1)
+        round.append(moved)
+
+    return players, score_table
+
+def reset_header(players):
+    """Accepts player list to reset header of results table after shifting dealers"""
+    new_header = players.copy()
+    new_header.insert(0, "Round")
+
+    return new_header
 
 if __name__ == "__main__":
     # say hello to the player, give instructions and get the list of players
@@ -106,6 +126,8 @@ if __name__ == "__main__":
             table.insert(-1, cur_round)
             print(tabulate(table, headers=header, tablefmt="outline"))
             print("\n")
+            player_list, table = reset_order(player_list, table)
+            header = reset_header(player_list)
             round_number += 1
         else:
             winning_player(player_list, player_totals, win_score)
