@@ -1,5 +1,5 @@
 """
-version 0.7
+version 0.9
 created 2025-08-14
 Scores for Flip 7 are running totals
 default winning condition is a score of 200
@@ -9,16 +9,20 @@ set up two modes: basic and guided
 basic will take simple inputs from the user and add those inputs to the user's score
 guided will allow the user to input the values of each individual card, add those to get the score, then add the score to the total
 
-maybe allow two differnet table displays: by round and just total by player
 TODO: 
     D - v0.5 tweak winning condition message to state who won and with what score
     D - v0.6 handle winning ties 
     D - v0.7 added during 0.6 work, will need to reset player order each round to help say dealer
-    v0.9 error handling
-    v0.9.5 clean up variable names, formatting and promp language
+    W - v0.9 error handling
+    ---pre-handling any potential errors
+    ---validate entries (names should be strings, score should be whole numbers)
+    v0.9.5 clean up variable names, formatting and prompt language. Add type hinting support. 
     v1.0 README and release
     v1.1 implement guided mode (probably just an extra function)
     v1.2 implment alternate table view
+    
+    Possibly migrate this to a better looking version by using textual
+    Apprently having a function return two variable types is not great practice, so try to clean that up
 """
 
 from tabulate import tabulate
