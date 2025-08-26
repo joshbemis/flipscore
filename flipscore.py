@@ -1,138 +1,182 @@
 """
-version 0.9
-created 2025-08-14
-Scores for Flip 7 are running totals
-default winning condition is a score of 200
-each player that ends the round with cards adds the total of their cards
-if a player has 7 value cards in the line, they get a bonus 15 points
-set up two modes: basic and guided
-basic will take simple inputs from the user and add those inputs to the user's score
-guided will allow the user to input the values of each individual card, add those to get the score, then add the score to the total
+/******************************************************************************/
+Flip 7 Score Keeper
+Created by Josh Bemis
+Last Updated: 2025-08-26
+v 0.9.5 - code rewrite
 
-TODO: 
-    D - v0.5 tweak winning condition message to state who won and with what score
-    D - v0.6 handle winning ties 
-    D - v0.7 added during 0.6 work, will need to reset player order each round to help say dealer
-    W - v0.9 error handling
-    ---pre-handling any potential errors
-    ---validate entries (names should be strings, score should be whole numbers)
-    v0.9.5 clean up variable names, formatting and prompt language. Add type hinting support. 
-    v1.0 README and release
-    v1.1 implement guided mode (probably just an extra function)
-    v1.2 implment alternate table view
-    
-    Possibly migrate this to a better looking version by using textual
-    Apprently having a function return two variable types is not great practice, so try to clean that up
+This program is meant entirely for individual use and is not intended to be
+monitized. I have no affiliation with the Flip 7 card game or its creators. 
+/******************************************************************************/
 """
 
 from tabulate import tabulate
 
-def get_player_list():
-    """ Prompts user to enter all player names, then returns them as a list """
-    player_list = []
-    print("In the following prompts, enter each player's name one at a time. When all players are entered, type done.")
+class Player:
+    """Class for each player that tracks scores"""
 
-    while True:
-        player_name = input("Enter player name: ")
-        if player_name.lower() == "done":
-            break
-        else:
-            player_list.append(player_name)
-    print("\n")
-          
-    return player_list
+    def __init__(self, name, current_score, total_score):
+        self.name = name
+        self.current_score = current_score
+        self.total_score = total_score
+
 
 def intro():
-    """Starts game, provides directions and records the win condition. Will collect game mode later."""
-    print("Welcome to the Flip 7 score keeper! \n")
-    print("This program has two modes: basic and guided. In basic mode, you will need to add each player's cards at the end of each round and enter the total.")
-    print("In guided mode, you will enter each card individually and the program will total them for you.\n")
-    # program_mode = input("Enter 1 for basic score keeping mode and 2 for guided: ")
-    program_mode = "basic"
-    win_score = int(input(f"You chose {program_mode} mode. What score would you like to play to? The default is 200: "))
+    """Greets player and collects each name, returns list of players"""
+    print(f"Welcome to the Flip 7 score keeper!\n")
+    player_number = int(input("How many players will be playing? "))
+    player_list = get_player_names(player_number)
+
+    return player_list
+
+
+def get_player_names(player_number):
+    """Runs during intro, returns list of player objects"""
+    count = 1
+    player_list = []
+    
+    # create player object for each name and store in player list
+    while count <= player_number:
+        player_name = str(input(f"---Enter a name for player {count}: "))
+        new_player = Player(player_name, 0, 0)
+        player_list.append(new_player)
+        count += 1
+
+    return player_list
+
+def set_winning_score():
+    """Lets user define the score needed to win"""
+    winning_score = int(input("\nEnter the score you'd like to set to win " \
+                              "(default is 200): "))
+    # error handle this for only numerics and provide default if blank use try
+    
+    print(f"\nAlright, the first to {winning_score} points wins the game!")
+
+    return winning_score
+
+def play_round(player_list, round_number, dealer):
+    """Controls a round of play and updates scores afterwards"""
+    # make things pretty and note who is dealing in case players forget
+    print(f"\n~~~~~~~~~~~~~~~ROUND {round_number}~~~~~~~~~~~~~~~")
+    print(f"{dealer} is dealing this round.")
+
+    # set up empty list for current round scores
+    current_round = []
+
+    # loop through players and update scores
+    for player in player_list:
+        player.current_score = int(input(f"---What was {player.name}'s " \
+                "score? "))
+        player.total_score += player.current_score
+        current_round.append(player.current_score)
+
+    # insert round number to current score list, then return it
+    current_round.insert(0, round_number)
+
+    return current_round
+
+def check_for_winner(player_list, winning_score):
+    """Loops through all players and looks for totals above win condition"""
+    win_flag = 0
+
+    for player in player_list:
+        if player.total_score >= winning_score:
+            win_flag = 1
+    
+    return win_flag
+
+def shift_dealer(player_list, dealer_index, win_flag):
+    """Moves dealer flag to next player in player list"""
+    if win_flag == 1:
+        pass
+    elif dealer_index == (len(player_list) - 1):
+        dealer_index = 0
+    else:
+        dealer_index += 1
+
+    return dealer_index, player_list[dealer_index].name
+
+def print_round(player_list, round_number, round_scores):
+    """Prints rolling total table after each round using Tabulate"""
+    # set up table header
+    header = []
+    for player in player_list:
+        header.append(player.name)
+
+    header.insert(0, "Round")
+
+    # set up content table, pull in overall totals
+    player_totals = []
+    for player in player_list:
+        player_totals.append(player.total_score)
+
+    # avoid having to copy list
+    table = []
+    player_totals.insert(0, "Total")
+    for round in round_scores:
+        table.append(round)
+    table.append(player_totals)
+    
+    # print with tabulate
     print("\n")
-    
-    # return program mode as well when implemented
-    return win_score
+    print(tabulate(table, headers=header, tablefmt="grid"))
 
-def play_round(players, round_number, cur_totals):
-    """Pulls the score for each player from input and sends the round scores and totals back as lists"""
-    round_scores = [round_number]
-    print(f"~~~~~Starting round number {round_number}!~~~~~")
-    print(f"{players[0]} deals this round.")
-    for player in players:
-        round_scores.append(int(input(f"What was {player}'s score? ")))
-    
-    # updates total for each player
-    for score in range(1, len(round_scores)):
-        cur_totals[score] += round_scores[score]
 
-    return round_scores, cur_totals # return new player list
-
-def winning_player(players, cur_totals, win_score):
-    """Accepts the player list and the current totals and returns the player with highest score"""
+def end_game(player_list, dealer_index, winning_score):
+    """Determines winner and any other players that hit win score"""
+    # create empty list to populate with players that won
     winners = []
-    start_value = 1 # since total list contains "Total" as first value we start at the second list value
     
-    for total in cur_totals[1:]:
-        if total >= win_score:
-            winners.append(players[cur_totals.index(total, start_value) - 1])
-            start_value += 1
+    # start by looking for a winner to the right of dealer
+    for player in player_list[(dealer_index + 1):]:
+        if player.total_score >= winning_score:
+            winners.append(player.name)
 
+    # continue looking for winners to the left of and including dealer
+    for player in player_list[:(dealer_index + 1)]:
+        if player.total_score >= winning_score:
+            winners.append(player.name)
+
+    return winners
+
+def print_results(winners, winning_score, player_list):
+    """Prints end game result strings"""
+    for player in player_list:
+        if player.name == winners[0]:
+            final_score = player.total_score
+    print(f"\n{winners[0]} was our overall winner with " \
+            f"{final_score} points!\n")
+
+    # print all players with required score
+    print(f"The players that got {winning_score} points are:")
+    count = 1
     for winner in winners:
-        if winners.index(winner) == 0:
-            print(f"The first person to achieve {win_score} points was {winner}. They are our overall winner!")
-        else:
-            print(f"The next person to achieve {win_score} points was {winner}. Too slow!")
-
-def reset_order(players, score_table):
-    """Accepts the player list and scores lists, resets the order after each round to change dealer"""
-    # shift first player to last player
-    moved = players.pop(0)
-    players.append(moved)
-
-    # shift first total to last total to line up with players, start at index 1 to avoid "Total" value
-    moved = score_table[-1].pop(1)
-    score_table[-1].append(moved)
-
-    # shift each rounds scores so they appear correctly on summary table, start at index -1 to exclude total item
-    for round in score_table[:-1]:
-        moved = round.pop(1)
-        round.append(moved)
-
-    return players, score_table
-
-def reset_header(players):
-    """Accepts player list to reset header of results table after shifting dealers"""
-    new_header = players.copy()
-    new_header.insert(0, "Round")
-
-    return new_header
+        for player in player_list:
+            if player.name == winner:
+                print(f"---{count}. {winner} - {player.total_score} points")
+                count += 1
 
 if __name__ == "__main__":
-    # say hello to the player, give instructions and get the list of players
-    win_score = intro()
-    player_list = get_player_list()
-    
-    # set up for round loop
+    # define a few starting variables
     round_number = 1
-    player_totals = [0] * (len(player_list) + 1)
-    player_totals[0] = "Total"
-    
-    # set up for tabulate table
-    header = player_list.copy()
-    header.insert(0, "Round")
-    table = [player_totals]
+    win_flag = 0
+    dealer_index = 0
+    round_scores = []
 
-    while True:
-        if max(player_totals[1:]) < win_score:
-            cur_round, player_totals = play_round(player_list, round_number, player_totals)
-            table.insert(-1, cur_round)
-            print(tabulate(table, headers=header, tablefmt="outline"))
-            print("\n")
-            player_list, table = reset_order(player_list, table)
-            header = reset_header(player_list)
-            round_number += 1
-        else:
-            winning_player(player_list, player_totals, win_score)
-            break
+    # game setup
+    player_list = intro()
+    winning_score = set_winning_score()
+    dealer = player_list[dealer_index].name
+
+    # start play
+    while win_flag == 0:
+        current_round = play_round(player_list, round_number, dealer)
+        round_scores.append(current_round)
+        print_round(player_list, round_number, round_scores)
+        win_flag = check_for_winner(player_list, winning_score)
+        round_number += 1
+        dealer_index, dealer = shift_dealer(player_list, dealer_index, win_flag)
+    
+    # win condition has been reached - print winners and results
+    winners = end_game(player_list, dealer_index, winning_score)
+    print_results(winners, winning_score, player_list)
